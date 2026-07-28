@@ -1,8 +1,14 @@
 import { Router, type IRouter } from "express";
-import healthRouter from "./health";
+import healthRouter from "./health.js";
+import anoviaAuthRouter from "./anovia-auth.js";
+import anoviaPublicRouter from "./anovia-public.js";
+import anoviaAdminRouter from "./anovia-admin.js";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(anoviaAuthRouter);
+router.use(anoviaPublicRouter);
+router.use("/admin", anoviaAdminRouter);
 
 export default router;
