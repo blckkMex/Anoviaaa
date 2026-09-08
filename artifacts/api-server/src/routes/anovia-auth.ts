@@ -9,11 +9,12 @@ const router = Router();
 
 router.post('/auth/login', async (req, res) => {
   const { email, password } = req.body ?? {};
-  if (!email || !password) {
+  const loginId = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  if (!loginId || typeof password !== 'string' || !password) {
     res.status(400).json({ error: 'Email and password required' });
     return;
   }
-  const [admin] = await db.select().from(anoviaAdmins).where(eq(anoviaAdmins.email, email.toLowerCase())).limit(1);
+  const [admin] = await db.select().from(anoviaAdmins).where(eq(anoviaAdmins.email, loginId)).limit(1);
   if (!admin) {
     res.status(401).json({ error: 'Invalid credentials' });
     return;

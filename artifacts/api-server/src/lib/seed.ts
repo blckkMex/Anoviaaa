@@ -44,11 +44,11 @@ const DEFAULT_SETTINGS: Record<string, string> = {
 
 export async function seedDatabase() {
   // ── Admin user ──────────────────────────────────────────────────────────
-  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (adminEmail && adminPassword) {
-    const [existing] = await db.select().from(anoviaAdmins).where(eq(anoviaAdmins.email, adminEmail.toLowerCase())).limit(1);
+    const [existing] = await db.select().from(anoviaAdmins).where(eq(anoviaAdmins.email, adminEmail)).limit(1);
     if (!existing) {
       const hash = await bcrypt.hash(adminPassword, 12);
       await db.insert(anoviaAdmins).values({ email: adminEmail.toLowerCase(), passwordHash: hash });
