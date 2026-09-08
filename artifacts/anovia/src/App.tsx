@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, X, ArrowRight, Star, MapPin,
   Instagram, MessageCircle, Heart, Sparkles,
-  Gift
+  Gift, LockKeyhole, Camera
 } from 'lucide-react';
 import Admin from './pages/Admin';
-import { getProducts, getOffers, getSettings, Product, Offer, Settings } from './lib/api';
+import { getProducts, getOffers, getSettings, getGallery, Product, Offer, GalleryItem, Settings } from './lib/api';
 
 // ── Decorative helpers ──────────────────────────────────────────────────────
 
@@ -17,8 +17,8 @@ const SparkleIcon = ({ size = 16, className = '' }: { size?: number; className?:
   </svg>
 );
 
-const Daisy = ({ className = '' }: { className?: string }) => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className={className}>
+const Daisy = ({ className = '', style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className={className} style={style}>
     <circle cx="16" cy="16" r="5" fill="#FF80AB" />
     {[0,45,90,135,180,225,270,315].map((deg, i) => (
       <ellipse key={i} cx="16" cy="5" rx="3" ry="5.5" fill="#FFB6C1" opacity="0.85"
@@ -79,6 +79,13 @@ const HamperGlyph = () => (
     </div>
   </div>
 );
+const OxidisedGlyph = () => (
+  <div className="w-16 h-16 relative flex items-center justify-center">
+    <div className="w-11 h-11 border-[3px] border-[var(--color-navy)] rounded-full" />
+    <div className="absolute w-5 h-5 border-[2px] border-[var(--color-navy)] rotate-45" />
+    <div className="absolute w-2 h-2 rounded-full bg-[var(--color-navy)]" />
+  </div>
+);
 
 const CATEGORY_GLYPHS: Record<string, React.ReactNode> = {
   'Necklaces': <NecklaceGlyph />,
@@ -86,11 +93,11 @@ const CATEGORY_GLYPHS: Record<string, React.ReactNode> = {
   'Bangles': <BangleGlyph />,
   'Rings': <RingGlyph />,
   'Hair Accessories': <HairClipGlyph />,
-  'Gift Hampers': <HamperGlyph />,
+  'Oxidised Jewellery': <OxidisedGlyph />,
 };
 
-const FadeIn = ({ children, delay = 0, className = '' }: {
-  children: React.ReactNode; delay?: number; className?: string;
+const FadeIn = ({ children, delay = 0, className = '', onClick }: {
+  children: React.ReactNode; delay?: number; className?: string; onClick?: () => void;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 28 }}
@@ -98,6 +105,7 @@ const FadeIn = ({ children, delay = 0, className = '' }: {
     viewport={{ once: true, margin: '-80px' }}
     transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
     className={className}
+    onClick={onClick}
   >
     {children}
   </motion.div>
@@ -128,8 +136,8 @@ function Header({ whatsappUrl }: { whatsappUrl: string }) {
   const navLinks = [
     { name: 'Our Story', href: '#story' },
     { name: 'Promise', href: '#promise' },
-    { name: 'Shop', href: '#shop' },
-    { name: 'Hampers', href: '#hampers' },
+    { name: 'Catalogue', href: '#catalogue' },
+    { name: 'Gallery', href: '#gallery' },
     { name: 'Reviews', href: '#reviews' },
   ];
 
@@ -164,10 +172,16 @@ function Header({ whatsappUrl }: { whatsappUrl: string }) {
         </nav>
 
         <div className="hidden md:block">
-          <button onClick={() => scrollTo('#shop')}
-            className="bg-[var(--color-navy)] text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-[var(--color-navy-light)] transition-colors shadow-md hover:shadow-lg">
-            Shop Now
-          </button>
+          <div className="flex items-center gap-3">
+          <a href="/login"
+              className="flex items-center gap-1.5 text-[var(--color-navy-muted)] hover:text-[var(--color-navy)] text-xs font-bold uppercase tracking-wide transition-colors">
+              <LockKeyhole size={14} /> Admin
+            </a>
+           <button onClick={() => scrollTo('#catalogue')}
+              className="bg-[var(--color-navy)] text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-[var(--color-navy-light)] transition-colors shadow-md hover:shadow-lg">
+              Shop Now
+            </button>
+          </div>
         </div>
 
         <button className="md:hidden z-50 text-[var(--color-navy)] p-2" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">
@@ -191,10 +205,13 @@ function Header({ whatsappUrl }: { whatsappUrl: string }) {
                   {link.name}
                 </button>
               ))}
-              <button onClick={() => scrollTo('#shop')}
+              <button onClick={() => scrollTo('#catalogue')}
                 className="mt-8 bg-[var(--color-navy)] text-white px-8 py-4 rounded-full text-lg w-full font-bold shadow-md">
                 Shop Now
               </button>
+               <a href="/login" className="mt-3 flex items-center justify-center gap-2 text-[var(--color-navy-muted)] font-bold">
+                <LockKeyhole size={16} /> Admin Login
+              </a>
             </nav>
           </motion.div>
         )}
@@ -262,13 +279,13 @@ function Hero({ subtitle, body }: { subtitle: string; body: string }) {
           transition={{ duration: 0.8, delay: 0.65 }}
           className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
         >
-          <button onClick={() => scrollTo('#shop')}
+          <button onClick={() => scrollTo('#catalogue')}
             className="px-8 py-4 bg-[var(--color-navy)] text-white rounded-full font-bold hover:bg-[var(--color-navy-light)] transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2">
-            Shop the Edit <ArrowRight size={18} />
+             View Catalogue <ArrowRight size={18} />
           </button>
-          <button onClick={() => scrollTo('#hampers')}
+          <button onClick={() => scrollTo('#gallery')}
             className="px-8 py-4 bg-white border-2 border-[var(--color-navy)] text-[var(--color-navy)] rounded-full font-bold hover:bg-[var(--color-navy)] hover:text-white transition-all shadow-md w-full sm:w-auto">
-            View Hampers
+            View Gallery
           </button>
         </motion.div>
       </div>
@@ -288,7 +305,7 @@ function Hero({ subtitle, body }: { subtitle: string; body: string }) {
 }
 
 function MarqueeStrip({ offers }: { offers: Offer[] }) {
-  const terms = offers.length > 0 ? offers.map(o => o.text) : ['Anti-tarnish', 'Custom pieces', 'Gift hampers', 'Pan India delivery', 'Curated by Anisha', 'Since Day One'];
+  const terms = offers.length > 0 ? offers.map(o => o.text) : ['Anti-tarnish', 'Custom pieces', 'Oxidised jewellery', 'Pan India delivery', 'Curated by Anisha', 'Since Day One'];
   const allTerms = [...terms, ...terms, ...terms, ...terms];
 
   return (
@@ -386,13 +403,13 @@ function ShopTheEdit({ products, whatsappUrl }: { products: Product[]; whatsappU
     { id: 2, name: 'Bangles', category: 'Bangles', description: 'Stacks & cuffs', price: '', imageUrl: '', inStock: true, sortOrder: 2 },
     { id: 3, name: 'Rings', category: 'Rings', description: 'Adjustable sizes', price: '', imageUrl: '', inStock: true, sortOrder: 3 },
     { id: 4, name: 'Hair Accessories', category: 'Hair Accessories', description: 'Claws & bands', price: '', imageUrl: '', inStock: true, sortOrder: 4 },
-    { id: 5, name: 'Gift Hampers', category: 'Gift Hampers', description: 'Curated boxes', price: '', imageUrl: '', inStock: true, sortOrder: 5 },
+    { id: 5, name: 'Oxidised Jewellery', category: 'Oxidised Jewellery', description: 'Statement pieces', price: '', imageUrl: '', inStock: true, sortOrder: 5 },
   ];
 
   return (
     <>
       <WaveDivider fill="var(--color-navy)" bg="white" />
-      <section id="shop" className="py-24 md:py-32 bg-[var(--color-navy)] px-6 relative overflow-hidden">
+       <section id="catalogue" className="py-24 md:py-32 bg-[var(--color-navy)] px-6 relative overflow-hidden">
         <SparkleIcon size={40} className="absolute top-12 left-12 text-white opacity-10" />
         <SparkleIcon size={24} className="absolute bottom-20 right-20 text-[var(--color-pink)] opacity-30" />
         <Daisy className="absolute top-8 right-16 opacity-15 scale-150" />
@@ -400,11 +417,11 @@ function ShopTheEdit({ products, whatsappUrl }: { products: Product[]; whatsappU
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16 md:mb-20">
             <FadeIn>
-              <span className="text-sm font-bold uppercase tracking-widest text-[var(--color-pink)] mb-4 block">Shop the Edit</span>
+               <span className="text-sm font-bold uppercase tracking-widest text-[var(--color-pink)] mb-4 block">Anovia Catalogue</span>
             </FadeIn>
             <FadeIn delay={0.1}>
               <h2 className="text-4xl md:text-5xl font-bold text-white max-w-3xl mx-auto leading-tight" style={{ fontFamily: 'Fredoka, sans-serif' }}>
-                Something for every collarbone, wrist, and desk drawer
+                 Find your next favourite piece
               </h2>
             </FadeIn>
           </div>
@@ -422,7 +439,7 @@ function ShopTheEdit({ products, whatsappUrl }: { products: Product[]; whatsappU
                   ) : (
                     <div className="w-full h-32 flex items-center justify-center pt-6">
                       <div className="transform group-hover:scale-110 transition-transform duration-500 text-white">
-                        {CATEGORY_GLYPHS[c.category] ?? CATEGORY_GLYPHS['Gift Hampers']}
+                         {CATEGORY_GLYPHS[c.category] ?? CATEGORY_GLYPHS['Oxidised Jewellery']}
                       </div>
                     </div>
                   )}
@@ -443,7 +460,7 @@ function ShopTheEdit({ products, whatsappUrl }: { products: Product[]; whatsappU
           <FadeIn delay={0.6} className="mt-16 text-center">
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-[var(--color-pink)] font-bold hover:text-white transition-colors border-b-2 border-[var(--color-pink)] pb-1">
-              Browse full catalog on WhatsApp <ArrowRight size={16} />
+               Browse the full catalogue on WhatsApp <ArrowRight size={16} />
             </a>
           </FadeIn>
         </div>
@@ -526,11 +543,11 @@ function MysteryScoop({ heading, body }: { heading: string; body: string }) {
   );
 }
 
-function HampersSection({ heading, body, whatsappUrl }: { heading: string; body: string; whatsappUrl: string }) {
-  const tags = ['Custom Branding', 'Bulk Orders', 'Birthday Boxes', 'Wedding Favours', 'Corporate Gifting'];
+function OxidisedSection({ heading, body, whatsappUrl }: { heading: string; body: string; whatsappUrl: string }) {
+  const tags = ['Statement earrings', 'Tribal motifs', 'Layered necklaces', 'Everyday silver', 'Gift-ready pieces'];
 
   return (
-    <section id="hampers" className="py-24 md:py-32 bg-white px-6">
+    <section id="oxidised" className="py-24 md:py-32 bg-white px-6">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-16 md:gap-24">
         <div className="flex-1 order-2 md:order-1 flex justify-center w-full">
           <FadeIn className="w-full max-w-[400px] aspect-square relative">
@@ -551,8 +568,8 @@ function HampersSection({ heading, body, whatsappUrl }: { heading: string; body:
         <div className="flex-1 order-1 md:order-2">
           <FadeIn>
             <div className="flex items-center gap-2 mb-4">
-              <Gift size={16} className="text-[var(--color-navy)]" />
-              <span className="text-sm font-bold uppercase tracking-widest text-[var(--color-navy-muted)]">Hampers & Corporate</span>
+               <Sparkles size={16} className="text-[var(--color-navy)]" />
+               <span className="text-sm font-bold uppercase tracking-widest text-[var(--color-navy-muted)]">Oxidised Jewellery</span>
             </div>
           </FadeIn>
           <FadeIn delay={0.1}>
@@ -571,9 +588,39 @@ function HampersSection({ heading, body, whatsappUrl }: { heading: string; body:
             </div>
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-[var(--color-navy)] text-white px-8 py-4 rounded-full font-bold hover:bg-[var(--color-navy-light)] transition-colors shadow-md w-full sm:w-auto">
-              Get a Quote <ArrowRight size={18} />
+               Shop oxidised pieces <ArrowRight size={18} />
             </a>
           </FadeIn>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PhotoGallery({ items }: { items: GalleryItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <section id="gallery" className="py-24 md:py-32 bg-[var(--color-bg-alt)] px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-14">
+          <FadeIn>
+            <span className="text-sm font-bold uppercase tracking-widest text-[var(--color-navy-muted)] mb-4 block">
+              <Camera size={14} className="inline-block mr-2 text-[var(--color-pink)]" /> Anovia moments
+            </span>
+            <h2 className="text-4xl md:text-5xl font-bold text-[var(--color-navy)]" style={{ fontFamily: 'Fredoka, sans-serif' }}>
+              A little gallery of lovely things
+            </h2>
+          </FadeIn>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {items.map((item, index) => (
+            <FadeIn key={item.id} delay={index * 0.05} className={index % 5 === 0 ? 'md:col-span-2 md:row-span-2' : ''}>
+              <figure className="group h-full min-h-44 overflow-hidden rounded-3xl bg-white border-2 border-[var(--color-bg-accent)] shadow-sm">
+                <img src={item.imageUrl} alt={item.altText || item.title} className="w-full h-full min-h-44 object-cover group-hover:scale-105 transition-transform duration-500" />
+                {item.title && <figcaption className="sr-only">{item.title}</figcaption>}
+              </figure>
+            </FadeIn>
+          ))}
         </div>
       </div>
     </section>
@@ -669,7 +716,7 @@ function CTABand({ heading, body, whatsappUrl }: { heading: string; body: string
           </div>
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
             <a href="#shop" className="bg-white text-[var(--color-navy)] px-8 py-4 rounded-full font-bold hover:bg-[var(--color-bg-light)] transition-colors text-center shadow-md">
-              Shop the Edit
+              View Catalogue
             </a>
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
               className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-full font-bold hover:bg-white hover:text-[var(--color-navy)] transition-colors flex items-center justify-center gap-2">
@@ -698,7 +745,7 @@ function Footer({ tagline, whatsappUrl, instagramHandle, instagramUrl }: {
         <div className="md:col-span-3">
           <h4 className="text-white font-bold text-xl mb-6" style={{ fontFamily: 'Fredoka, sans-serif' }}>Explore</h4>
           <ul className="flex flex-col gap-4">
-            {[['Shop the Edit','#shop'],['Mystery Scoop','#scoop'],['Hampers & Corporate','#hampers'],['Reviews','#reviews']].map(([l,h]) => (
+            {[['Catalogue','#catalogue'],['Mystery Scoop','#scoop'],['Oxidised Jewellery','#oxidised'],['Gallery','#gallery'],['Reviews','#reviews']].map(([l,h]) => (
               <li key={l}><a href={h} className="text-white/60 hover:text-[var(--color-pink)] transition-colors font-medium">{l}</a></li>
             ))}
           </ul>
@@ -724,7 +771,7 @@ function Footer({ tagline, whatsappUrl, instagramHandle, instagramUrl }: {
 const DEFAULTS: Settings = {
   announcement_text: 'Free delivery on orders of Rs 599+ — Order on WhatsApp',
   hero_subtitle: 'Jewellery & gifting that travels pan-India',
-  hero_body: 'Anti-tarnish pieces made for every day, and curated hampers packed just like we\'d pack them for a friend.',
+  hero_body: 'Anti-tarnish pieces made for every day, with oxidised jewellery and thoughtful gifting for every mood.',
   story_heading: 'From a first market stall to doorsteps across India',
   story_body: 'Anovia started small — a table of hand-picked pieces at a local stall — and grew one order, one repeat customer, and one custom request at a time.',
   story_founder: '— Anisha, founder',
@@ -732,12 +779,12 @@ const DEFAULTS: Settings = {
   promise_body: 'Every piece is chosen the way we\'d choose something for a friend — pretty, practical, and built to last past one season.',
   scoop_heading: 'Shake the jar. See what you get.',
   scoop_body: 'Every order includes a little something extra — a mystery gift we sneak in just for you.',
-  hampers_heading: 'The gift that does all the work for you',
-  hampers_body: 'From birthday surprises to bulk corporate gifting — we plan the box, you take the credit.',
+  oxidised_heading: 'Bold oxidised pieces, made to stand out',
+  oxidised_body: 'Discover expressive oxidised jewellery with a handcrafted feel — easy to style, easy to gift, and made for everyday drama.',
   cta_heading: 'Ready to order?',
   cta_body: 'Send us a message to check availability.',
-  footer_tagline: 'Anti-tarnish jewellery, customisation, and hampers — designed in Ahmedabad & Jamnagar, delivered pan-India.',
-  whatsapp_url: 'https://wa.me/message',
+  footer_tagline: 'Anti-tarnish jewellery, oxidised statement pieces, and thoughtful gifting — designed in Ahmedabad & Jamnagar, delivered pan-India.',
+  whatsapp_url: 'https://wa.me/918200230930',
   instagram_handle: '@anoviaaa.16',
   instagram_url: 'https://instagram.com/anoviaaa.16',
 };
@@ -752,16 +799,19 @@ function MainSite() {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [products, setProducts] = useState<Product[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
 
   useEffect(() => {
     Promise.all([
       getSettings().then(setSettings).catch(() => {}),
       getProducts().then(setProducts).catch(() => {}),
       getOffers().then(setOffers).catch(() => {}),
+      getGallery().then(setGallery).catch(() => {}),
     ]);
   }, []);
 
-  const wa = s(settings, 'whatsapp_url');
+  const configuredWa = s(settings, 'whatsapp_url');
+  const wa = configuredWa === 'https://wa.me/message' ? 'https://wa.me/918200230930' : configuredWa;
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-light)] text-[var(--color-foreground)]">
@@ -774,7 +824,8 @@ function MainSite() {
         <ThePromise heading={s(settings, 'promise_heading')} body={s(settings, 'promise_body')} />
         <ShopTheEdit products={products} whatsappUrl={wa} />
         <MysteryScoop heading={s(settings, 'scoop_heading')} body={s(settings, 'scoop_body')} />
-        <HampersSection heading={s(settings, 'hampers_heading')} body={s(settings, 'hampers_body')} whatsappUrl={wa} />
+        <OxidisedSection heading={s(settings, 'oxidised_heading') || s(settings, 'hampers_heading')} body={s(settings, 'oxidised_body') || s(settings, 'hampers_body')} whatsappUrl={wa} />
+        <PhotoGallery items={gallery} />
         <Locations />
         <Reviews />
         <CTABand heading={s(settings, 'cta_heading')} body={s(settings, 'cta_body')} whatsappUrl={wa} />
@@ -795,6 +846,7 @@ export default function App() {
   return (
     <Switch>
       <Route path="/admin" component={Admin} />
+      <Route path="/login" component={Admin} />
       <Route component={MainSite} />
     </Switch>
   );

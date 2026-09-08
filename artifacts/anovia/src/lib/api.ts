@@ -59,6 +59,15 @@ export interface Offer {
   sortOrder: number;
 }
 
+export interface GalleryItem {
+  id: number;
+  title: string;
+  imageUrl: string;
+  altText: string;
+  sortOrder: number;
+  active: boolean;
+}
+
 export type Settings = Record<string, string>;
 
 // ── Public API ────────────────────────────────────────────────────────────
@@ -70,6 +79,9 @@ export async function getOffers(): Promise<Offer[]> {
 }
 export async function getSettings(): Promise<Settings> {
   return apiFetch('/settings');
+}
+export async function getGallery(): Promise<GalleryItem[]> {
+  return apiFetch('/gallery');
 }
 
 // ── Admin products ────────────────────────────────────────────────────────
@@ -98,6 +110,20 @@ export async function adminUpdateOffer(id: number, data: Partial<Omit<Offer, 'id
 }
 export async function adminDeleteOffer(id: number): Promise<void> {
   return apiFetch(`/admin/offers/${id}`, { method: 'DELETE' });
+}
+
+// ── Admin gallery ──────────────────────────────────────────────────────────
+export async function adminGetGallery(): Promise<GalleryItem[]> {
+  return apiFetch('/admin/gallery');
+}
+export async function adminCreateGallery(data: Omit<GalleryItem, 'id'>): Promise<GalleryItem> {
+  return apiFetch('/admin/gallery', { method: 'POST', body: JSON.stringify(data) });
+}
+export async function adminUpdateGallery(id: number, data: Partial<Omit<GalleryItem, 'id'>>): Promise<GalleryItem> {
+  return apiFetch(`/admin/gallery/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+export async function adminDeleteGallery(id: number): Promise<void> {
+  return apiFetch(`/admin/gallery/${id}`, { method: 'DELETE' });
 }
 
 // ── Admin settings ────────────────────────────────────────────────────────

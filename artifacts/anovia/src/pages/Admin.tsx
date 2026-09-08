@@ -4,13 +4,14 @@ import {
   getToken, setToken, clearToken, login, getMe,
   adminGetProducts, adminCreateProduct, adminUpdateProduct, adminDeleteProduct,
   adminGetOffers, adminCreateOffer, adminUpdateOffer, adminDeleteOffer,
+  adminGetGallery, adminCreateGallery, adminUpdateGallery, adminDeleteGallery,
   adminGetSettings, adminSaveSettings,
-  Product, Offer, Settings,
+  Product, Offer, GalleryItem, Settings,
 } from '../lib/api';
 import {
   LogOut, Plus, Pencil, Trash2, Save, X,
   Package, Tag, Settings as SettingsIcon, ChevronLeft,
-  Eye, EyeOff, Upload, Loader2, Store,
+  Eye, EyeOff, Upload, Loader2, Store, Camera,
 } from 'lucide-react';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -117,7 +118,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 const EMPTY_PRODUCT: Omit<Product, 'id'> = {
   name: '', category: '', description: '', price: '', imageUrl: '', inStock: true, sortOrder: 0,
 };
-const CATEGORIES = ['Necklaces', 'Earrings', 'Bangles', 'Rings', 'Hair Accessories', 'Gift Hampers', 'Other'];
+const CATEGORIES = ['Necklaces', 'Earrings', 'Bangles', 'Rings', 'Hair Accessories', 'Oxidised Jewellery', 'Other'];
 
 function ProductModal({
   product, onSave, onClose,
@@ -361,7 +362,7 @@ function ProductsTab() {
         </div>
       )}
 
-      {(modal === 'new' || (modal && modal !== 'new')) && (
+      {modal && (
         <ProductModal
           product={modal === 'new' ? null : (modal as Product)}
           onSave={handleSave}
@@ -470,6 +471,136 @@ function OffersTab() {
   );
 }
 
+// ── Gallery Tab ─────────────────────────────────────────────────────────────
+
+const EMPTY_GALLERY: Omit<GalleryItem, 'id'> = {
+  title: '', imageUrl: '', altText: '', sortOrder: 0, active: true,
+};
+
+function GalleryModal({
+  item, onSave, onClose,
+}: {
+  item: Partial<GalleryItem> | null;
+  onSave: (data: Omit<GalleryItem, 'id'>, id?: number) => Promise<void>;
+  onClose: () => void;
+}) {
+  const isNew = !item?.id;
+  const [form, setForm] = useState<Omit<GalleryItem, 'id'>>({ ...EMPTY_GALLERY, ...(item ?? {}) });
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const set = (key: keyof typeof form, value: string | number | boolean) => setForm(current => ({ ...current, [key]: value }));
+
+  const handleImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5 MB'); return; }
+    set('imageUrl', await fileToBase64(file));
+    if (!form.altText) set('altText', file.name.replace(/\.[^.]+$/, ''));
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.imageUrl) { toast.error('Please upload a photo first'); return; }
+    setSaving(true);
+    try { await onSave(form, item?.id); onClose(); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b-2 border-[var(--color-bg-accent)] sticky top-0 bg-white z-10 rounded-t-3xl">
+          <h3 className="text-xl font-bold text-[var(--color-navy)]" style={{ fontFamily: 'Fredoka, sans-serif' }}>{isNew ? 'Add Gallery Photo' : 'Edit Gallery Photo'}</h3>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-[var(--color-bg-alt)] text-[var(--color-navy-muted)]"><X size={20} /></button>
+        </div>
+        <form onSubmit={handleSave} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-bold text-[var(--color-navy)] mb-2">Photo *</label>
+            <div className="flex items-start gap-4">
+              {form.imageUrl ? (
+                <div className="relative">
+                  <img src={form.imageUrl} alt="preview" className="w-28 h-28 rounded-2xl object-cover border-2 border-[var(--color-bg-accent)]" />
+                  <button type="button" onClick={() => set('imageUrl', '')} className="absolute -top-2 -right-2 w-6 h-6 bg-[var(--color-pink-dark)] text-white rounded-full flex items-center justify-center shadow"><X size={12} /></button>
+                </div>
+              ) : (
+                <div className="w-28 h-28 rounded-2xl border-2 border-dashed border-[var(--color-bg-accent)] flex items-center justify-center bg-[var(--color-bg-light)] text-[var(--color-navy-muted)]"><Camera size={26} /></div>
+              )}
+              <div className="flex-1">
+                <button type="button" onClick={() => fileRef.current?.click()} className="flex items-center gap-2 px-4 py-2 border-2 border-[var(--color-bg-accent)] rounded-xl text-sm font-bold text-[var(--color-navy)] hover:border-[var(--color-navy)] transition-colors"><Upload size={16} /> Upload Photo</button>
+                <p className="text-xs text-[var(--color-navy-muted)] mt-1">JPG, PNG, WebP · max 5 MB</p>
+                <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-[var(--color-navy)] mb-1">Caption</label>
+            <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. New collection" className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-bg-accent)] focus:border-[var(--color-navy)] outline-none text-[var(--color-navy)] font-medium" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-[var(--color-navy)] mb-1">Alt text</label>
+            <input value={form.altText} onChange={e => set('altText', e.target.value)} placeholder="Describe this photo" className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-bg-accent)] focus:border-[var(--color-navy)] outline-none text-[var(--color-navy)] font-medium" />
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex-1">
+              <label className="block text-sm font-bold text-[var(--color-navy)] mb-1">Display Order</label>
+              <input type="number" value={form.sortOrder} onChange={e => set('sortOrder', Number(e.target.value))} className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-bg-accent)] focus:border-[var(--color-navy)] outline-none text-[var(--color-navy)] font-medium" />
+            </div>
+            <div className="flex items-center gap-3 pt-6">
+              <label className="text-sm font-bold text-[var(--color-navy)]">Visible</label>
+              <button type="button" onClick={() => set('active', !form.active)} className={`w-12 h-6 rounded-full transition-colors relative ${form.active ? 'bg-[var(--color-navy)]' : 'bg-gray-300'}`}>
+                <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${form.active ? 'translate-x-6' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-[var(--color-bg-accent)] text-[var(--color-navy)] font-bold">Cancel</button>
+            <button type="submit" disabled={saving} className="flex-1 py-3 rounded-xl bg-[var(--color-navy)] text-white font-bold shadow-md disabled:opacity-60 flex items-center justify-center gap-2">
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} {isNew ? 'Add Photo' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function GalleryTab() {
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState<Partial<GalleryItem> | null | 'new'>(null);
+  const load = async () => { setLoading(true); try { setItems(await adminGetGallery()); } finally { setLoading(false); } };
+  useEffect(() => { load(); }, []);
+  const handleSave = async (data: Omit<GalleryItem, 'id'>, id?: number) => {
+    if (id) { await adminUpdateGallery(id, data); toast.success('Gallery photo updated'); }
+    else { await adminCreateGallery(data); toast.success('Gallery photo added'); }
+    await load();
+  };
+  const handleDelete = async (id: number, title: string) => {
+    if (!confirm(`Delete "${title || 'this photo'}"?`)) return;
+    await adminDeleteGallery(id); setItems(current => current.filter(item => item.id !== id)); toast.success('Photo removed');
+  };
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div><h2 className="text-2xl font-bold text-[var(--color-navy)]" style={{ fontFamily: 'Fredoka, sans-serif' }}>Photo Gallery</h2><p className="text-sm text-[var(--color-navy-muted)]">{items.length} photos · shown on the main site</p></div>
+        <button onClick={() => setModal('new')} className="flex items-center gap-2 bg-[var(--color-navy)] text-white px-5 py-2.5 rounded-2xl font-bold shadow-md"><Plus size={18} /> Add Photo</button>
+      </div>
+      {loading ? <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[var(--color-navy)]" size={32} /></div> : items.length === 0 ? (
+        <div className="text-center py-20 text-[var(--color-navy-muted)]"><Camera size={48} className="mx-auto mb-3 opacity-30" /><p className="font-semibold">No gallery photos yet</p><button onClick={() => setModal('new')} className="mt-4 text-[var(--color-navy)] underline font-bold text-sm">Add your first photo</button></div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {items.map(item => (
+            <div key={item.id} className={`bg-white rounded-2xl border-2 overflow-hidden ${item.active ? 'border-[var(--color-bg-accent)]' : 'border-gray-200 opacity-60'}`}>
+              <div className="h-40 bg-[var(--color-bg-alt)]"><img src={item.imageUrl} alt={item.altText} className="w-full h-full object-cover" /></div>
+              <div className="p-3"><p className="font-bold text-[var(--color-navy)] truncate">{item.title || 'Untitled photo'}</p><p className="text-xs text-[var(--color-navy-muted)] mt-1">{item.active ? 'Visible on site' : 'Hidden'}</p><div className="flex gap-2 mt-3"><button onClick={() => setModal(item)} className="flex-1 flex items-center justify-center gap-1 py-2 text-sm font-bold text-[var(--color-navy)] border-2 border-[var(--color-bg-accent)] rounded-xl"><Pencil size={14} /> Edit</button><button onClick={() => handleDelete(item.id, item.title)} className="py-2 px-3 text-red-500 border-2 border-red-100 rounded-xl"><Trash2 size={14} /></button></div></div>
+            </div>
+          ))}
+        </div>
+      )}
+      {modal && <GalleryModal item={modal === 'new' ? null : modal} onSave={handleSave} onClose={() => setModal(null)} />}
+    </div>
+  );
+}
+
 // ── Settings Tab ───────────────────────────────────────────────────────────
 
 const SETTINGS_FIELDS: { key: string; label: string; multiline?: boolean; section: string }[] = [
@@ -483,8 +614,8 @@ const SETTINGS_FIELDS: { key: string; label: string; multiline?: boolean; sectio
   { key: 'promise_body', label: 'Promise Section Body', multiline: true, section: 'The Promise' },
   { key: 'scoop_heading', label: 'Mystery Scoop Heading', section: 'Mystery Scoop' },
   { key: 'scoop_body', label: 'Mystery Scoop Body', multiline: true, section: 'Mystery Scoop' },
-  { key: 'hampers_heading', label: 'Hampers Section Heading', section: 'Hampers' },
-  { key: 'hampers_body', label: 'Hampers Section Body', multiline: true, section: 'Hampers' },
+  { key: 'oxidised_heading', label: 'Oxidised Jewellery Section Heading', section: 'Oxidised Jewellery' },
+  { key: 'oxidised_body', label: 'Oxidised Jewellery Section Body', multiline: true, section: 'Oxidised Jewellery' },
   { key: 'cta_heading', label: 'CTA Band Heading', section: 'CTA Band' },
   { key: 'cta_body', label: 'CTA Band Body', section: 'CTA Band' },
   { key: 'footer_tagline', label: 'Footer Tagline', multiline: true, section: 'Footer & Contact' },
@@ -589,6 +720,7 @@ function SettingsTab() {
 
 const NAV = [
   { key: 'products', label: 'Products', icon: Package },
+  { key: 'gallery', label: 'Photo Gallery', icon: Camera },
   { key: 'offers', label: 'Marquee & Offers', icon: Tag },
   { key: 'content', label: 'Site Content', icon: SettingsIcon },
 ];
@@ -656,6 +788,7 @@ function Dashboard({ adminEmail, onLogout }: { adminEmail: string; onLogout: () 
         {/* Content */}
         <main className="flex-1 p-6 pb-24 md:pb-6 overflow-auto">
           {tab === 'products' && <ProductsTab />}
+          {tab === 'gallery' && <GalleryTab />}
           {tab === 'offers' && <OffersTab />}
           {tab === 'content' && <SettingsTab />}
         </main>

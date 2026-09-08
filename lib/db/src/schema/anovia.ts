@@ -15,6 +15,17 @@ export const anoviaProducts = pgTable('anovia_products', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const anoviaGallery = pgTable('anovia_gallery', {
+  id: serial('id').primaryKey(),
+  title: varchar('title', { length: 255 }).notNull().default(''),
+  imageUrl: text('image_url').notNull().default(''),
+  altText: varchar('alt_text', { length: 255 }).notNull().default(''),
+  sortOrder: integer('sort_order').notNull().default(0),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 export const anoviaOffers = pgTable('anovia_offers', {
   id: serial('id').primaryKey(),
   text: text('text').notNull(),

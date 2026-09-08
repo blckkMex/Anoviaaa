@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db, anoviaProducts, anoviaOffers, anoviaSettings } from '@workspace/db';
+import { db, anoviaProducts, anoviaOffers, anoviaSettings, anoviaGallery } from '@workspace/db';
 import { eq } from 'drizzle-orm';
 import { requireAdmin } from '../middlewares/auth.js';
 
@@ -75,6 +75,42 @@ router.put('/offers/:id', async (req, res) => {
 router.delete('/offers/:id', async (req, res) => {
   const id = Number(req.params.id);
   await db.delete(anoviaOffers).where(eq(anoviaOffers.id, id));
+  res.status(204).send();
+});
+
+// ── Gallery ─────────────────────────────────────────────────────────────────
+
+router.get('/gallery', async (_req, res) => {
+  const all = await db.select().from(anoviaGallery).orderBy(anoviaGallery.sortOrder, anoviaGallery.id);
+  res.json(all);
+});
+
+router.post('/gallery', async (req, res) => {
+  const { title, imageUrl, altText, sortOrder, active } = req.body;
+  if (!imageUrl) { res.status(400).json({ error: 'imageUrl required' }); return; }
+  const [row] = await db.insert(anoviaGallery).values({
+    title: title ?? '',
+    imageUrl,
+    altText: altText ?? title ?? 'Anovia gallery image',
+    sortOrder: sortOrder ?? 0,
+    active: active ?? true,
+  }).returning();
+  res.status(201).json(row);
+});
+
+router.put('/gallery/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const { title, imageUrl, altText, sortOrder, active } = req.body;
+  const [row] = await db.update(anoviaGallery)
+    .set({ title, imageUrl, altText, sortOrder, active, updatedAt: new Date() })
+    .where(eq(anoviaGallery.id, id))
+    .returning();
+  if (!row) { res.status(404).json({ error: 'Not found' }); return; }
+  res.json(row);
+});
+
+router.delete('/gallery/:id', async (req, res) => {
+  await db.delete(anoviaGallery).where(eq(anoviaGallery.id, Number(req.params.id)));
   res.status(204).send();
 });
 
