@@ -62,12 +62,13 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
         <div className="bg-white rounded-3xl shadow-xl border-2 border-[var(--color-bg-accent)] p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-bold text-[var(--color-navy)] mb-2">Email</label>
+              <label className="block text-sm font-bold text-[var(--color-navy)] mb-2">Admin ID or Email</label>
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="admin@anovia.com"
+                placeholder="anovia16"
+                autoComplete="username"
                 required
                 className="w-full px-4 py-3 rounded-2xl border-2 border-[var(--color-bg-accent)] focus:border-[var(--color-navy)] outline-none text-[var(--color-navy)] bg-[var(--color-bg-light)] transition-colors font-medium"
               />

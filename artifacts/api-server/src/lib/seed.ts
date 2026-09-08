@@ -53,6 +53,12 @@ export async function seedDatabase() {
       const hash = await bcrypt.hash(adminPassword, 12);
       await db.insert(anoviaAdmins).values({ email: adminEmail.toLowerCase(), passwordHash: hash });
       logger.info('Admin user seeded from env vars');
+    } else if (!(await bcrypt.compare(adminPassword, existing.passwordHash))) {
+      const hash = await bcrypt.hash(adminPassword, 12);
+      await db.update(anoviaAdmins)
+        .set({ passwordHash: hash })
+        .where(eq(anoviaAdmins.id, existing.id));
+      logger.info('Admin password synchronized from env vars');
     }
   } else {
     const [row] = await db.select({ total: count() }).from(anoviaAdmins);
