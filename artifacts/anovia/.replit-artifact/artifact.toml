@@ -16,7 +16,7 @@ run = "pnpm --filter @workspace/anovia run dev"
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/anovia", "run", "build" ]
 serve = "static"
-publicDir = "artifacts/anovia/dist/public"
+publicDir = "artifacts/anovia/dist"
 
 [[services.production.rewrites]]
 from = "/*"

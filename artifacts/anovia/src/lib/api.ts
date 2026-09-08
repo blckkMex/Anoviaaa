@@ -1,5 +1,6 @@
 // ── Storage key ───────────────────────────────────────────────────────────
 const TOKEN_KEY = 'anovia_admin_token';
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -20,7 +21,7 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`/api${path}`, { ...init, headers });
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `HTTP ${res.status}`);

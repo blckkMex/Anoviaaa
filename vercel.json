@@ -1,0 +1,11 @@
+{
+  "framework": "vite",
+  "buildCommand": "pnpm --filter @workspace/anovia run build",
+  "outputDirectory": "artifacts/anovia/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
